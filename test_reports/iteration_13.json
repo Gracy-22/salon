@@ -1,0 +1,34 @@
+{
+  "summary": "Full frontend regression + new Stylist Photo Picker scenarios passed on the refactored OwnerDashboard. OTP login works, all 5 tabs render correct panels, sidebar toggle works, Insights period switch (Day/Week/Month) works, Insights renders 3 recharts (revenue + 2 pies), Customer Tracker selector loads, No-Show metrics render, Multi-service picker shows only ACTIVE treatments (9 active / 12 total), Photo picker UI complete (empty icon, upload button, URL toggle, URL input, preview, remove), new stylist 'Photo Test Stylist' was added with Unsplash photo URL and avatar image appeared on its row, Edit re-pre-fills photo preview, Remove + Save reverts row to 'PT' initials fallback, archive cleanup succeeded. Seeded stylists Elena Hart / Michael Voss / Sarah Lin all render small avatar images on their rows. Zero 4xx/5xx /api errors throughout entire flow.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Owner > Customer Tracker (OwnerCustomerDirectory.jsx ~line 75)",
+        "issues": [
+          "React hydration / DOM-nesting warning in console: '<span> cannot be a child of <option>'. The preferred-stylist <option> is rendering a <span> wrapper (likely from a templating tool injecting an x-source-editable span). Visually harmless, but React logs an error on render and it will cause SSR hydration mismatch if SSR is ever enabled. Recommend ensuring the <option> child is plain text only (no inline <span>/component wrapper) — e.g. `{stylist.name}` directly, not wrapped, and remove any debug spans inside <option>."
+        ]
+      }
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Fix the <span> inside <option> hydration warning in /app/frontend/src/pages/owner/OwnerCustomerDirectory.jsx around line 75 (preferred-stylist select). Render option label as plain text, not wrapped in a span/component."
+  ],
+  "critical_code_review_comments": [
+    "OwnerCustomerDirectory.jsx renders a <span> inside an <option> (line ~75) — React logs 'cannot be a child of <option>' on every render. Use plain text node for the option label.",
+    "StaffTreatmentsManager.jsx: stylist photo size cap is 1 MB (MAX_PHOTO_BYTES). When pasted as a base64 data URL, the encoded payload is ~33% larger than the source file — consider hinting that to the user (the current 'Image must be 1 MB or smaller' refers to the raw file, fine for file upload, but URL paste mode is unbounded). Low priority.",
+    "OwnerCustomerProfilePanel: the customer search field has data-testid='owner-customer-select' but it is actually an <input> typeahead, not a native <select>. The naming is slightly misleading for future tests — consider renaming to 'owner-customer-search' OR exposing the underlying suggestion options with 'owner-customer-option-{phone}' testids so automated tests can pick a customer by phone.",
+    "Refactor health: OwnerDashboard.jsx slimmed to ~153 lines and inner managers extracted to /pages/owner/*.jsx — file sizes are healthy (<260 lines each). Good split."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "n/a (skipped)", "frontend": "100% on requested scenarios (12/12)" },
+  "test_credentials": "Owner phone 8511111593 — OTP via POST /api/login/request-otp, mock_otp in response. Verify via POST /api/login/verify-otp; token saved to sessionStorage as 'owner_token'.",
+  "seed_data_creation": "Created stylist 'Photo Test Stylist' (id=stylist-photo-test-stylist) for the photo-picker scenarios; archived at end of run (cleanup successful).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Refactored OwnerDashboard works end-to-end. To log in fast: POST /api/login/request-otp -> grab mock_otp -> POST /api/login/verify-otp -> set sessionStorage 'owner_token' -> navigate to /owner/dashboard. Side menu tabs use data-testid='owner-tab-{daily|customers|staff|noshow|insights}'. Insights period selector is a native <select> (not buttons). Customer search is an <input> typeahead under data-testid='owner-customer-select'. Photo picker checkboxes for services use selector input[data-testid^='stylist-service-'] — note: 'stylist-service-picker' is the WRAPPER div, so use the input prefix to avoid matching the container. Lingering 'OTP Test Stylist' and 'OTP UI Stylist' archived rows from prior iterations remain in DB; harmless.",
+  "rca of the issue": "No bugs to RCA. One non-blocking React DOM-nesting warning (<span> inside <option> in OwnerCustomerDirectory.jsx ~line 75) is logged on every render of the Customer Tracker tab. Root cause: an inline span wrapper around the option label (likely auto-injected by a tooling plugin). Mitigation: ensure <option> contains only text children."
+}

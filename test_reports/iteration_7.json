@@ -1,0 +1,31 @@
+{
+  "summary": "Smoke-tested 3 new features: (1) GET /api/owner/revenue-trend, (2) POST /api/twilio/inbound, (3) /api/customer/cancel WhatsApp side-effect, plus frontend RevenueTrend card on /owner/dashboard. 9/10 checks pass. One integration concern: /api/twilio/inbound only reads From/Body as query params; sending as application/x-www-form-urlencoded (how Twilio actually posts) does NOT parse them and falls through to the empty-body reply.",
+  "tested_scope": ["backend", "frontend", "integration"],
+  "passed": [
+    "GET /api/owner/revenue-trend?days=7 -> 200, series length=7, dates consecutive ending today (2026-06-22 .. 2026-06-28), items have {date,revenue,count}",
+    "GET /api/owner/revenue-trend?days=70 -> 422",
+    "GET /api/owner/revenue-trend?days=0 -> 422",
+    "Booking created for tomorrow (2026-06-29) is NOT included in days=7 series (revenue stays 0) — confirms future-date exclusion",
+    "POST /api/twilio/inbound?Body= (empty) -> {reply:'Please reply with CONFIRM <reference> or CANCEL <reference>.'}",
+    "POST /api/twilio/inbound?Body=HELP -> {reply:'Format: CONFIRM <ref> or CANCEL <ref>.'}",
+    "POST /api/twilio/inbound?Body=CANCEL <ref> for booking owned by +919876543210 -> reply 'cancelled', booking status becomes 'cancelled' (verified via GET /api/bookings/{id})",
+    "POST /api/twilio/inbound?Body=CANCEL NOPE1234 -> {reply:'No booking found for reference NOPE1234.'}",
+    "POST /api/customer/cancel -> {ok:true}; backend logs confirm Twilio Messages.json POST returned 201 (WhatsApp cancellation message sent)",
+    "Frontend /owner/dashboard (PIN 9999) shows 'REVENUE · LAST 7 DAYS' card with data-testid='revenue-trend', 7 bar columns (06-22..06-28), and data-testid='trend-total' (₹0)"
+  ],
+  "failed": [
+    {
+      "area": "backend / Twilio inbound webhook",
+      "issue": "POST /api/twilio/inbound does NOT accept form-urlencoded body. Endpoint signature uses 'From: str = \"\", Body: str = \"\"' which FastAPI interprets as query params only. Real Twilio webhooks POST application/x-www-form-urlencoded — they will always hit the empty-body branch.",
+      "evidence": "curl -X POST .../api/twilio/inbound -H 'Content-Type: application/x-www-form-urlencoded' -d 'From=whatsapp:+919876543210&Body=HELP' returned {reply:'Please reply with CONFIRM <reference> or CANCEL <reference>.'} instead of the expected 'Format: CONFIRM <ref> or CANCEL <ref>.'. Same call as query string (?From=...&Body=HELP) returns the correct reply.",
+      "priority": "HIGH"
+    }
+  ],
+  "action_items": [
+    "Update /api/twilio/inbound to accept form fields. Either use `From: str = Form('')` and `Body: str = Form('')` (then it still works for query thanks to FastAPI fallback if you keep both) OR read the raw Request and parse both await request.form() and request.query_params. Without this, Twilio's real webhook will be a no-op."
+  ],
+  "success_rate": {"backend": "89%", "frontend": "100%"},
+  "retest_needed": true,
+  "full_testing_deferred": true,
+  "cleanup_notes": "Created 2 test bookings for +919876543210; both cancelled (db094b2c... via Twilio inbound CANCEL, e033ee3f... via /customer/cancel)."
+}

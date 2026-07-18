@@ -1,0 +1,19 @@
+{
+  "summary": "Phase 2 Twilio WhatsApp integration verified end-to-end: 3 backend booking scenarios (sent/skipped/failed) and 4 validation invariants pass; frontend e2e for checked and unchecked optin flows pass.",
+  "tested_scope": ["backend", "frontend", "integration"],
+  "passed": [
+    "POST /api/bookings optin=true + +919876543210 -> whatsapp_status='sent', whatsapp_error=null (Twilio actually called)",
+    "POST /api/bookings optin=false -> whatsapp_status='skipped', no Twilio call",
+    "POST /api/bookings optin=true + invalid phone 'abcd' -> booking created with whatsapp_status='failed' and whatsapp_error '21211: Unable to create record: The To number +91abcd is not a valid phone number.'",
+    "Past date -> 400, overlap -> 409, outside hours (22:00) -> 400, stylist not offering service -> 400",
+    "Step 4 Details: data-testid='whatsapp-optin-checkbox' present, checked by default, label text contains 'Send me a WhatsApp confirmation'",
+    "Confirmation screen with checkbox CHECKED shows data-testid='whatsapp-status' with text '\u2713 Confirmation sent to +919876543210 on WhatsApp.'",
+    "Confirmation screen with checkbox UNCHECKED hides whatsapp-status section entirely"
+  ],
+  "failed": [],
+  "action_items": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "retest_needed": false,
+  "full_testing_deferred": true,
+  "notes": "Test bookings (WA Test*, ETest*) cleaned up from MongoDB after each run. Twilio sender +919825221997 to recipient +919876543210 succeeded (sid logged)."
+}

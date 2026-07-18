@@ -1,0 +1,34 @@
+{
+  "summary": "Frontend-only E2E regression for Owner > Staff & Treatments tab. Logged in via OTP (mock) for phone 8511111593, then exercised full CRUD + archive flows for Treatments and Staff, verified MultiServicePicker excludes archived treatments, and ran regressions for Daily Book, Insights, and public /book. All 11 review-request scenarios passed.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "owner dashboard load (page-level)", "issue": "Two HTTP 422 console errors observed on initial /owner/dashboard load (no visible UI impact). Source endpoint not identified in this run; recommend inspecting owner page boot calls (likely a default/optional param being sent empty)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Investigate the two 422 responses logged on Owner Dashboard initial load (non-blocking but noisy).",
+    "Update /app/memory/test_credentials.md to add the Owner WhatsApp OTP test phone (8511111593) since OTP is the documented auth path for the dashboard; current file only lists PIN 9999."
+  ],
+  "critical_code_review_comments": [
+    "OwnerDashboard.jsx is now ~770 lines and contains 10+ inner components (StaffTreatmentsManager, MultiServicePicker, InsightsDashboard, OwnerCustomerDirectory, etc.). Recommend splitting each manager into its own file under /pages/owner/ for maintainability.",
+    "Review request mentions data-testid='owner-side-tab-staff', but actual implementation uses 'owner-tab-staff' (see TABS map + OwnerSideMenu). Align docs/tests on a single canonical testid.",
+    "StaffTreatmentsManager.saveService / saveStylist do not wrap axios calls in try/catch; a failing POST/PATCH will surface as an unhandled promise rejection with no user toast.",
+    "archiveService/archiveStylist use window.confirm; consider a styled confirm dialog for consistency with the rest of the design system.",
+    "ProfileInput passes type='number' as string-valued inputs; numeric inputs are stringly typed in form state and coerced only at save (Number(...))—OK but worth a Pydantic-style validation pass on the frontend before POST."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "100% (11/11 scenarios)"},
+  "test_credentials": "Owner OTP login: phone=8511111593, OTP from POST /api/login/request-otp { mock_otp }. Confirmed working at preview URL.",
+  "seed_data_creation": "Created TEST_Treatment_X (archived end-state) and TEST_Stylist (archived end-state) via UI as part of the flows. Both remain in DB in archived state per archive-only design.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All Staff & Treatments CRUD + archive flows verified via UI against live preview. Archived items correctly disappear from MultiServicePicker and from public /api/services (verified count drops from 10 -> 9 active). Daily Book and Insights tabs still render fine after navigating away. Public /book route requires customer OTP login (Sign in to book screen) before service list renders; archived-treatment exclusion was double-confirmed by direct /api/services curl. Test seed items left in archived state (TEST_Treatment_X, TEST_Stylist) — main agent may purge if desired.",
+  "rca of the issue": "No issues blocked the review request. Minor 422s on dashboard boot are unrelated to Staff & Treatments and should be investigated separately."
+}

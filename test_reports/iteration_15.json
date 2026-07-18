@@ -1,0 +1,48 @@
+{
+  "summary": "Phase 1 multi-location regression complete. Backend: 20/20 pytest pass on /api/salons (public, active-only), /api/owner/salons (auth + CRUD + 'cannot archive default' guard), salon_id propagation on stylists (back-fill + filter + unknown-salon-rejection), bookings carrying salon_id and filterable, revenue-insights/no-shows accepting salon_id, and a fresh booking inheriting its stylist's salon_id (verified TEST_QA_BranchStylist + 2027-01-15 booking on salon-test-branch-qa). Frontend: owner OTP login → dashboard renders [data-testid='owner-salon-switcher'] defaulting to 'All salons'; Salons tab present in sidebar between Staff and No-Show; SalonsManager renders with all 6 form fields (name/city/address/phone/timezone/active); creating 'QA Branch' produces toast 'Salon added' and [data-testid='salon-row-salon-qa-branch']; Edit-then-Save updates address; archive turns row to 'Archived · slug: qa-branch'; salon-main row exposes Edit but NOT Archive (correctly hidden); switching header to 'Maison Aurelle — Main' reloads Insights/No-Show/Staff with 0 page errors; Staff & Treatments stylist form shows [data-testid='stylist-salon-select'] pre-selected to the header-selected salon; existing stylist rows now show salon name in the description line (e.g., 'Maison Aurelle — Main · Archived · 1 treatments').",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/owner/revenue-insights", "issue": "Response shape varies (flat vs nested kpis) — not breaking but inconsistent with other owner endpoints; consider standardising on {kpis:{...}}."},
+      {"endpoint": "POST /api/owner/salons", "issue": "Phone normalization keeps a leading '+' if present, but always strips other non-digits; behaviour is correct, just undocumented in the API contract."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Insights dashboard (initial load)", "issues": ["Recharts emits 'width(-1)/height(-1)' warnings on first paint because chart containers mount before their parent flex resolves layout. Cosmetic only — chart eventually renders, but the warning is noisy in the console."]},
+      {"screen": "Salons manager", "issues": ["Pre-existing archived test salons ('Bandra Branch', 'Maison Aurelle — Bandra') are visible at the top of the Salons list from prior iterations. Consider hiding archived salons by default behind a 'Show archived' toggle to reduce visual noise."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_multi_location_phase1.py",
+    "/app/test_reports/pytest/iter15_results.xml"
+  ],
+  "action_items": [
+    "(Optional) Standardise /api/owner/revenue-insights response shape to always nest under 'kpis'.",
+    "(Optional) Hide archived salons behind a toggle in SalonsManager to clean up visual list.",
+    "(Optional) Wrap Recharts ResponsiveContainer in a guarded mount so initial width(-1)/height(-1) warnings stop appearing on Insights page."
+  ],
+  "critical_code_review_comments": [
+    "Default salon seed + back-fill (_ensure_default_salon) is idempotent and runs at startup — verified via fresh /api/salons returning canonical doc and all 14 existing stylists carrying salon_id='salon-main'.",
+    "Salon CRUD endpoints correctly enforce: (a) owner auth (401 without token); (b) deterministic slug-based id ('Test Branch QA' → 'salon-test-branch-qa'); (c) auto-filled working_hours; (d) phone normalization; (e) explicit 400 'The default salon cannot be archived' guard on salon-main.",
+    "POST /api/owner/stylists validates salon_id against the salons collection ('Unknown salon_id' → 400) — verified.",
+    "POST /api/bookings correctly inherits salon_id from the stylist (line 779: stylist.get('salon_id') or DEFAULT_SALON_ID). New booking on TEST_QA_BranchStylist returned salon_id='salon-test-branch-qa' as expected.",
+    "Owner endpoints (bookings, summary, revenue-trend, revenue-insights, no-shows, stylists) all accept salon_id query param and filter via Mongo query. /api/stylists (public) also accepts the filter.",
+    "PATCH /api/owner/salons uses full OwnerSalonUpsert body (same gotcha as PATCH /api/owner/stylists noted in iter14) — verb is PATCH but body is mandatory full record. Not a regression; flag for future partial-update refactor.",
+    "Frontend salon switcher is a NATIVE <select> (not Radix), which is why role='option' selectors return 0 in tests — the switcher itself works correctly in the UI as verified visually. data-testid='owner-salon-switcher' is correctly applied.",
+    "Stylist form salon select correctly pre-selects from header switcher state — verified visually (header='Maison Aurelle — Main' → form Salon dropdown shows 'Maison Aurelle — Main').",
+    "salon-main row in SalonsManager correctly hides the Archive button and only exposes Edit — UX guardrail matches the 400 server-side guard."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_multi_location_phase1.py"
+  ],
+  "success_rate": {"backend": "100% (20/20 pytest)", "frontend": "100% on all requested scenarios"},
+  "test_credentials": "Owner phone 8511111593 → /api/owner/login/request-otp returns mock_otp → verify-otp returns JWT. Stored in sessionStorage('owner_token').",
+  "seed_data_creation": "Backend test created salon 'salon-test-branch-qa' + stylist TEST_QA_BranchStylist + 1 booking on 2027-01-15 — all archived in cleanup tests (TestZCleanup). Frontend test created 'QA Branch' (salon-qa-branch) — archived via UI during the test. NOTE: pre-existing archived salons from earlier iterations ('Bandra Branch', 'Maison Aurelle — Bandra') remain in DB.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Multi-location Phase 1 is solid. The owner salon switcher is a native <select>, so use page.select_option() to switch salons (not Radix .click on role=option). Frontend writes the selected salon_id to sessionStorage('owner_selected_salon_id') (verify if assertions on persistence across reloads are needed). Booking POST returns BookingResponse {booking, service, stylist} — read salon_id from booking.salon_id. Public /api/stylists returns a flat list (not wrapped). Default salon id 'salon-main' cannot be archived (400). Slug rule: lowercase, hyphenated, prefixed 'salon-' → e.g. 'QA Branch' → 'salon-qa-branch'.",
+  "rca of the issue": "No bugs found. Two minor cosmetic issues only: (1) Recharts width(-1)/height(-1) warnings on first Insights paint — known Recharts/ResponsiveContainer race condition, no functional impact. (2) Pre-existing archived salons clutter the Salons list — consider an 'archived' toggle. Both are non-blocking."
+}

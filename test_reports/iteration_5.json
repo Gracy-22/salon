@@ -1,0 +1,23 @@
+{
+  "summary": "Verified HIGH-priority fix from iteration_4: POST /api/bookings now filters out cancelled bookings during overlap check. Cancelled slots can be re-booked; active overlaps still 409.",
+  "tested_scope": ["backend"],
+  "passed": [
+    "POST /api/bookings creates booking A (stylist-michael, svc-beard-sculpt, 2026-07-28, 11:00) -> 200, status=upcoming",
+    "POST /api/bookings on same exact slot while A is active -> 409 'Slot just got booked' (overlap guard still works)",
+    "PATCH /api/owner/bookings/{A}/cancel -> 200 {ok:true}",
+    "POST /api/bookings on same slot AFTER cancelling A -> 200, status=upcoming (fix verified)",
+    "Cleanup: cancelled both test bookings (A and B) successfully"
+  ],
+  "failed": [],
+  "action_items": [],
+  "success_rate": {"backend": "100%", "frontend": "not tested (deferred per request)"},
+  "retest_needed": false,
+  "full_testing_deferred": true,
+  "evidence": {
+    "booking_a_id": "bc53604c-2da2-4ad4-9bb7-c97926708d9e",
+    "conflict_response": "HTTP 409 'Slot just got booked. Please pick another.'",
+    "booking_b_id": "8fc1012e-1432-4343-882b-e7320da2c352",
+    "b_status": "upcoming",
+    "cleanup_status": "both A and B cancelled"
+  }
+}

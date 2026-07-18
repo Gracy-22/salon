@@ -1,0 +1,162 @@
+{
+  "theme_archetype": {
+    "primary": "5 (Luxury)",
+    "secondary": "1 (Organic & Earthy)",
+    "mode": "hybrid",
+    "description": "A cinematic, editorial spa feel inspired by ever.co.id. Employs generous negative space, sophisticated typography (serif + minimal sans), and alternating dark/light sections to create depth and rhythm."
+  },
+  "colors": {
+    "background_light": "#FAF9F6",
+    "background_dark": "#111111",
+    "surface_light": "#F5EDE4",
+    "surface_dark": "#1A1A1A",
+    "text_dark": "#111111",
+    "text_light": "#FFFFFF",
+    "text_muted_light": "#666666",
+    "text_muted_dark": "#A3A3A3",
+    "border_light": "rgba(17, 17, 17, 0.1)",
+    "border_dark": "rgba(255, 255, 255, 0.1)"
+  },
+  "typography": {
+    "fonts": {
+      "heading": "Cormorant Garamond, ui-serif, Georgia, Cambria, Times New Roman, Times, serif",
+      "body": "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif"
+    },
+    "scales": {
+      "h1": "text-5xl md:text-6xl lg:text-7xl font-serif tracking-tighter leading-none",
+      "h2": "text-3xl md:text-4xl lg:text-5xl font-serif tracking-tight leading-tight",
+      "h3": "text-2xl md:text-3xl font-serif tracking-tight",
+      "body": "text-base md:text-lg font-sans leading-relaxed text-muted",
+      "overline": "text-xs font-sans tracking-[0.2em] uppercase font-medium",
+      "large_numeral": "text-6xl md:text-8xl font-serif font-light text-border_light"
+    }
+  },
+  "spacing_layout": {
+    "container": "max-w-7xl mx-auto px-6 md:px-12",
+    "section_padding": "py-24 md:py-32 lg:py-40",
+    "grid_bento": "grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16",
+    "image_radius": "rounded-none md:rounded-sm"
+  },
+  "motion_interaction": {
+    "hover_state": "opacity-80 transition-opacity duration-300",
+    "image_hover": "scale-105 transition-transform duration-700 ease-out",
+    "button_hover": "bg-text_dark text-text_light transition-colors duration-300",
+    "marquee": "slow continuous scroll for editorial ribbons"
+  },
+  "sections": [
+    {
+      "id": "nav",
+      "type": "navigation",
+      "layout": "sticky top-0 z-50 w-full backdrop-blur-xl bg-background_light/80 border-b border-border_light",
+      "content": "Brand mark centered or left. Links to /book, /manage, /login. Minimal and sleek. Dark mode variant when over hero."
+    },
+    {
+      "id": "hero",
+      "type": "hero_cinematic",
+      "layout": "relative h-[90vh] w-full flex items-center justify-center text-center overflow-hidden",
+      "background": "Cinematic full-viewport image with bg-black/40 overlay to ensure text contrast.",
+      "content": "Tagline in H1. Primary CTA ('Book now' -> /book) and Secondary CTA ('Discover treatments' -> scroll down). Both buttons minimal, sharp corners, or 1px border.",
+      "data_requirements": "None"
+    },
+    {
+      "id": "marquee_ribbon",
+      "type": "editorial_ribbon",
+      "layout": "py-8 border-y border-border_light bg-background_light overflow-hidden flex",
+      "content": "Continuously scrolling text: 'BEAUTY IN EVERY DETAIL • YOUR BEAUTY CELEBRATED • PRECISE TOUCH • ' in font-serif text-2xl.",
+      "motion": "react-fast-marquee or CSS infinite scroll"
+    },
+    {
+      "id": "philosophy",
+      "type": "editorial_story",
+      "layout": "section_padding container bg-background_light text-text_dark grid grid-cols-1 md:grid-cols-2 gap-16 items-center",
+      "content": "Left: Large atmospheric image. Right: Overline 'Our Philosophy', H2 'Quiet luxury for your body.', Body text explaining the spa's approach. Asymmetric alignment."
+    },
+    {
+      "id": "treatments",
+      "type": "horizontal_carousel_or_list",
+      "layout": "section_padding pl-6 md:pl-12 bg-background_dark text-text_light overflow-hidden",
+      "header": "H2 'Signature Treatments' with generous bottom margin.",
+      "content": "Cards with large numerals (01, 02), evocative image, service name, brief description. Links formatted as 'Book this service |' pointing to /book?service=<id>.",
+      "data_requirements": "GET /api/services"
+    },
+    {
+      "id": "locations",
+      "type": "bento_grid",
+      "layout": "section_padding container bg-background_light text-text_dark",
+      "header": "H2 'Our Sanctuaries' centered.",
+      "content": "Grid of location cards. Each card has a location photo, Salon Name (H3), City, Address, Hours. 'Book at this salon' CTA -> /book?salon=<id>.",
+      "data_requirements": "GET /api/salons"
+    },
+    {
+      "id": "stylists",
+      "type": "portrait_grid",
+      "layout": "section_padding container bg-surface_light text-text_dark",
+      "header": "H2 'Master Stylists' left-aligned.",
+      "content": "Grid of stylist portraits. Name, Bio. 'Book with <Name>' CTA -> /book?stylist=<id>.",
+      "data_requirements": "GET /api/stylists"
+    },
+    {
+      "id": "incentive",
+      "type": "banner",
+      "layout": "py-24 bg-background_dark text-text_light text-center px-6",
+      "content": "H2 'Begin Your Journey', Subtext about first-visit incentive. Large CTA 'Book an Appointment'."
+    },
+    {
+      "id": "footer",
+      "type": "footer_minimal",
+      "layout": "py-20 container bg-background_light border-t border-border_light text-text_dark",
+      "content": "Massive brand text or logo. Contact info, salon addresses, social links, legal."
+    }
+  ],
+  "components_guidance": {
+    "buttons": "Flat, rectangular, no border-radius. High contrast. Hover states invert colors.",
+    "cards": "Cardless design. Rely on grid gaps and images to define boundaries. No generic drop shadows. Use 1px borders if separation is needed.",
+    "images": "Use unoptimized aspect ratios (e.g., 3:4 for portraits, 16:9 for cinematic). Apply grayscale or sepia filters subtly via CSS if it helps unity, but full color is fine if curated."
+  },
+  "media": {
+    "hero": {
+      "url": "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODh8MHwxfHNlYXJjaHwxfHxsdXh1cnklMjBzcGElMjB0cmVhdG1lbnQlMjBhZXN0aGV0aWN8ZW58MHx8fHwxNzgzMDU5NTc1fDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Woman receiving facial mask treatment at luxury spa",
+      "usage": "Full viewport hero background"
+    },
+    "philosophy_image": {
+      "url": "https://images.unsplash.com/photo-1643684391140-c5056cfd3436?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODh8MHwxfHNlYXJjaHwzfHxsdXh1cnklMjBzcGElMjB0cmVhdG1lbnQlMjBhZXN0aGV0aWN8ZW58MHx8fHwxNzgzMDU5NTc1fDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Woman getting a facial massage",
+      "usage": "Left side of the philosophy section"
+    },
+    "locations_fallback": [
+      {
+        "url": "https://images.unsplash.com/photo-1759142235060-3191ee596c81?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1ODR8MHwxfHNlYXJjaHw0fHxtb2Rlcm4lMjBzYWxvbiUyMGludGVyaW9yJTIwbHV4dXJ5fGVufDB8fHx8MTc4MzA1OTU3NHww&ixlib=rb-4.1.0&q=85",
+        "alt": "Modern salon exterior at night"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1760862652442-e8ff7ebdd2f8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1ODR8MHwxfHNlYXJjaHwzfHxtb2Rlcm4lMjBzYWxvbiUyMGludGVyaW9yJTIwbHV4dXJ5fGVufDB8fHx8MTc4MzA1OTU3NHww&ixlib=rb-4.1.0&q=85",
+        "alt": "Salon shelves with luxury skincare products"
+      }
+    ],
+    "stylists_fallback": [
+      {
+        "url": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NDh8MHwxfHNlYXJjaHwyfHxwcm9mZXNzaW9uYWwlMjBoYWlyJTIwc3R5bGlzdCUyMHBvcnRyYWl0fGVufDB8fHx8MTc4MzA1OTU3NHww&ixlib=rb-4.1.0&q=85",
+        "alt": "Stylist portrait 1"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1607503873903-c5e95f80d7b9?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NDh8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBoYWlyJTIwc3R5bGlzdCUyMHBvcnRyYWl0fGVufDB8fHx8MTc4MzA1OTU3NHww&ixlib=rb-4.1.0&q=85",
+        "alt": "Stylist portrait 2"
+      },
+      {
+        "url": "https://images.pexels.com/photos/3993455/pexels-photo-3993455.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "alt": "Stylist portrait 3"
+      }
+    ]
+  },
+  "testing": {
+    "attributes": [
+      "data-testid='nav-book-button'",
+      "data-testid='hero-book-now-cta'",
+      "data-testid='hero-discover-cta'",
+      "data-testid='treatment-card-book-cta'",
+      "data-testid='salon-location-book-cta'",
+      "data-testid='stylist-book-cta'"
+    ]
+  }
+}

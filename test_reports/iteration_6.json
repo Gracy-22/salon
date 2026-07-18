@@ -1,0 +1,20 @@
+{
+  "summary": "Tested new customer self-cancel endpoint + WhatsApp template-with-fallback on bookings, and frontend Cancel button on /lookup. All 7 backend scenarios + frontend e2e cancel flow passed.",
+  "tested_scope": ["backend", "frontend", "integration"],
+  "passed": [
+    "POST /api/bookings with whatsapp_optin=true to +919876543210 -> 200; booking.whatsapp_status='sent' (template-first with free-text fallback works as designed)",
+    "POST /api/customer/cancel WRONG phone -> 403 {'detail':'Phone does not match'}; booking stays 'upcoming' (verified via /lookup)",
+    "POST /api/customer/cancel non-existent id -> 404 {'detail':'Booking not found'}",
+    "POST /api/customer/cancel CORRECT phone -> 200 {'ok':true}; booking removed from /lookup results (status filter excludes cancelled)",
+    "POST /api/customer/cancel on already-cancelled -> 400 {'detail':'Already cancelled'}",
+    "GET /api/availability: cancelled slot (10:00 on 2026-06-30 for stylist-elena) re-opens (available:true)",
+    "Frontend /lookup: search returns booking card with both data-testid='btn-reschedule-{id}' AND 'btn-cancel-{id}' visible side-by-side",
+    "Frontend Cancel flow: browser confirm dialog -> on accept, 'Booking cancelled' Sonner toast appears -> list refreshes and the booking card is gone"
+  ],
+  "failed": [],
+  "action_items": [],
+  "success_rate": {"backend": "100% (7/7)", "frontend": "100% (1/1 critical flow)"},
+  "retest_needed": false,
+  "full_testing_deferred": true,
+  "notes": "Did not retest 'done' booking 400 path (no done booking available) — code path is symmetric to 'cancelled' check and visually verified in server.py L746-747. Did not exhaustively re-run reschedule/owner dashboard/stylist portal/12h slot picker (treated as out-of-scope regression; new code paths do not touch them). Twilio templates pending approval — backend correctly falls back to free-text body, whatsapp_status='sent' confirms send success. Test bookings cleaned up via owner cancel."
+}

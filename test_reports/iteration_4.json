@@ -1,0 +1,37 @@
+{
+  "summary": "Phase 3 latency-sensitive test. Owner auth, owner bookings/summary/cancel, customer lookup, customer reschedule (success + 403/400/409), working-hours editor, APScheduler all verified end-to-end. Frontend pages /lookup, /owner, /owner/dashboard, /stylist 'Working hours' render with expected testids. 21/22 backend checks pass; remaining 1 was a test-script issue (code derivation), not an app bug.",
+  "tested_scope": ["backend", "frontend", "integration", "auth"],
+  "passed": [
+    "POST /api/owner/login pin=9999 -> 200 {token,name}; wrong pin -> 401",
+    "GET /api/owner/bookings?date= returns {date, bookings:[hydrated with service+stylist]}",
+    "GET /api/owner/summary returns {revenue, counts:{upcoming,done,no_show,cancelled}, per_stylist, total}",
+    "PATCH /api/owner/bookings/{id}/cancel -> 200; subsequent GET shows status='cancelled'",
+    "POST /api/bookings creates booking with reminders_sent=[] in response",
+    "POST /api/lookup {phone} returns hydrated bookings; wrong phone -> empty list",
+    "POST /api/customer/reschedule wrong phone -> 403; past date -> 400; conflicting slot -> 409; success -> 200 with reminders_sent reset to []",
+    "Booking date/time updated correctly after reschedule (verified via GET /api/bookings/{id})",
+    "Cancelled booking re-opens slot in /api/availability",
+    "PUT /api/stylist/{id}/working-hours weekday=6 closed=true -> next Sunday availability returns 0 slots; restored to 09:00-21:00 returns 47 slots",
+    "PUT working-hours close<open -> 400; weekday=7 -> 400",
+    "APScheduler started: backend logs show 'Reminder scheduler started.' and run_reminder_tick executes every minute",
+    "Frontend home has 'My Booking' link",
+    "Frontend /lookup: lookup-phone input, btn-lookup, lookup-results all render and function",
+    "Frontend /owner: input-owner-pin + btn-owner-login -> redirects to /owner/dashboard with owner-summary, owner-revenue, owner-bookings",
+    "Frontend /stylist: after Michael login, 'Working hours' tab shows hours-editor with hours-row-0..6"
+  ],
+  "failed": [
+    {
+      "area": "backend POST /api/bookings concurrency check",
+      "issue": "Conflict re-check on line 419-422 of server.py does NOT filter status!='cancelled'. Cancelled bookings still block new bookings at the same slot. This contradicts the spec ('after cancel, /api/availability for that booking re-opens those slots') for re-booking. /api/availability correctly excludes cancelled, but POST /api/bookings does not, causing a 409 mismatch.",
+      "evidence": "Slot 11:00 tomorrow shows available=true in /api/availability but POST /api/bookings to 11:00 returns 409 'Slot just got booked' because two cancelled bookings exist at that slot. Reproduced reliably; bypassed by using fresh slot 17:30/19:00 which then passed all flows.",
+      "priority": "HIGH"
+    }
+  ],
+  "action_items": [
+    "Fix /app/backend/server.py line ~419: add status filter to the existing-bookings query: db.bookings.find({'stylist_id': payload.stylist_id, 'date': payload.date, 'status': {'$ne': 'cancelled'}}, ...). This aligns booking creation with availability calculation and customer/reschedule conflict check (both already filter cancelled)."
+  ],
+  "success_rate": {"backend": "95%", "frontend": "100%"},
+  "retest_needed": true,
+  "full_testing_deferred": true,
+  "cleanup_done": "All test bookings cancelled; Michael Sunday hours restored to 09:00-21:00."
+}

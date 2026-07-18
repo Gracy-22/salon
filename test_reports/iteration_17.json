@@ -1,0 +1,43 @@
+{
+  "summary": "Phase 3 multi-location super-owner + per-location manager verified end-to-end. Backend: 27/27 pytest pass in /app/backend/tests/test_multi_location_phase3.py — owner CRUD /api/owner/managers (auth 401, create returns manager-priya-* id, owner-phone reserved 400, unknown-salon 400, duplicate-manager 409, active-stylist-phone conflict 409, patch, create-second QA manager); unified OTP login returns role='manager' + JWT token + manager + salon; /api/manager/me matches login response; /api/manager/bookings STRICTLY scoped by salon_id (QA manager sees only QA booking, main manager sees only main booking on the same date); /api/manager/revenue-insights returns kpis/status_counts/revenue_series; /api/manager/no-shows returns month payload; /api/manager/customers/search + /api/manager/customers/{phone} enforce salon presence (returns 404 'Customer not seen at this salon' otherwise); PATCH /api/manager/bookings/{id}/status returns 200 for own salon booking and 404 'Booking not found at this salon' for cross-salon; cross-role auth: owner token on /api/manager/me → 401, manager token on /api/owner/salons|stylists|managers|services → all 401; archived manager phone falls through to role='customer'. Phase 1+2 regression: 34/34 pass. Frontend: Owner OTP login → Salons tab → [data-testid='owner-managers-manager'] renders with form (name-input, salon-select, phone-input, login-phone-input, save-manager-button, managers-show-archived-toggle). Created 'QA Priya' → toast 'Manager added' shown + row [data-testid='manager-row-manager-qa-priya'] appears. Manager login flow /login with phone 9111100020: navigates to /manager/dashboard; header shows 'Maison Aurelle — Main' in [data-testid='manager-salon-name'] and 'Signed in as QA Priya' in [data-testid='manager-name']. sessionStorage.manager_token present. Sidebar has exactly 4 tabs (daily/customers/noshow/insights) and NO owner-salon-switcher / NO 'Staff & Treatments' / NO 'Salons' tab. All 4 panels render. Insights panel loads KPI cards (revenue/bookings/avg) + stylist & service pie charts with 0 console errors. Sign Out clears manager_token and returns to /login.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/owner/salons", "issue": "When client posts an id that collides with an existing (even archived) salon, the API silently generates a suffixed id (e.g., salon-bandra-qa-43ef9c) rather than reusing/erroring — repeated tests accumulate duplicate 'Bandra QA' rows in the salons list. Consider returning 409 or reviving the archived doc."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_multi_location_phase3.py",
+    "/app/test_reports/pytest/iter17_phase3_results.xml"
+  ],
+  "action_items": [
+    "(Optional, non-blocking) Fix POST /api/owner/salons collision behavior: either return 409 on id conflict with an archived salon or reactivate + update the archived doc, so re-runs don't accumulate 'Bandra QA' variants.",
+    "(Optional) During Phase 3 backend testing, several old 'Bandra QA' salons had piled up from previous iterations — they are now all archived. No action required unless UX wants to hide archived duplicates in the salon selector."
+  ],
+  "critical_code_review_comments": [
+    "Manager JWT correctly encodes role=manager, type=manager_access, salon_id claim — require_manager rejects any token missing these + verifies the manager doc still active. Good defensive design.",
+    "Unified /api/login/verify-otp precedence is owner → active manager → active stylist → customer. Archived manager correctly falls through to customer role (verified).",
+    "All /api/manager/* endpoints uniformly filter by ctx['salon_id'] from the JWT — no client-controlled salon param, so scope cannot be forged.",
+    "Cross-role isolation is complete: owner endpoints require Depends(require_owner) and manager endpoints require Depends(require_manager); tokens from the opposite role are rejected with 401 (all 4 owner endpoints verified).",
+    "manager_bookings PATCH status uses composite {id, salon_id} match — cross-salon returns 404 (correct, no accidental information leak on which salon the booking belongs to).",
+    "manager_customer_profile guards with a pre-check bookings.find_one({customer_phone, salon_id}) before returning full profile — good, prevents PII leaks across salons.",
+    "Owner login phone reservation check in create/update manager uses _normalize_phone on both sides — safe against +91 vs 10-digit variants.",
+    "ManagersManager form uses idiomatic data-testid coverage (name-input, salon-select, phone-input, login-phone-input, active-input, save-manager-button, managers-show-archived-toggle) making the flow easy to automate.",
+    "Manager Dashboard header cleanly separates data-testid='manager-salon-name' and data-testid='manager-name' — dashboards show single-salon context with no salon switcher (as spec'd for the manager role)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_multi_location_phase3.py"
+  ],
+  "success_rate": {"backend": "100% (27/27 Phase 3 + 34/34 Phase 1&2 regression)", "frontend": "100% on all requested scenarios"},
+  "test_credentials": "Owner phone 8511111593 (mock_otp in response). Test manager phones 9111100020 (main) and 9111100030 (bandra-qa) created + archived by tests.",
+  "seed_data_creation": "Backend test created: salon 'salon-bandra-qa' + 2 managers (manager-priya-qa on salon-main, manager-qa-bandra-mgr on salon-bandra-qa) + 1 QA stylist + 2 bookings on 2027-01-15 (one per salon) + 1 conflict stylist (TEST_QA_ConflictStylist). All archived by TestZCleanup at the end of the run. Frontend test created 'QA Priya' manager via UI + archived post-test via cleanup script.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Phase 3 fully verified. IMPORTANT: /app/backend/pytest.ini has `addopts = -n 2 --dist loadscope` (pytest-xdist parallel). Tests sharing state across classes MUST all live in the same module (loadscope pins module → 1 worker). To run Phase 3 sequentially override with `-n 0` (NOT `-p no:xdist`). Data-testids to reuse: owner-managers-manager, manager-name-input, manager-salon-select, manager-phone-input, manager-login-phone-input, manager-active-input, save-manager-button, managers-show-archived-toggle, manager-row-{id}, manager-salon-name, manager-name, manager-tab-{daily|customers|noshow|insights}, manager-{daily|customers|noshow|insights}-panel, manager-insights-{period-select|revenue-card|bookings-card|avg-card|stylist-pie|service-pie}, btn-manager-logout. Login flow testids: unified-login-page, login-phone-input, login-request-otp, login-otp-input, login-verify-otp. Note there are ~5 leftover archived 'Bandra QA' salons + ~12 archived manager rows in DB from previous test runs — they don't appear in the active list. Owner 'ALL SALONS' selector is still the default header selection.",
+  "rca of the issue": "No bugs found in Phase 3 implementation. One optional API ergonomics improvement flagged: POST /api/owner/salons with a colliding id silently creates a new suffixed row instead of returning 409 or reviving the archived doc, causing duplicate 'Bandra QA' entries to accumulate across test iterations."
+}

@@ -1,0 +1,28 @@
+{
+  "summary": "Phase 2 stylist portal verified end-to-end. Backend: login (good+401), public stylists strips pin, blocks create/delete reflects in /api/availability, validation errors return 400, schedule hydrates service, PATCH status done/invalid behaves correctly, weekly availability returns working_hours+blocks+bookings. Frontend: login flow, portal header+tabs, Today list with booking card, Done updates badge to Done, weekly grid (7x24+) renders, click toggles available->busy with toast and persists to customer availability, click again clears, sign out returns to /stylist login.",
+  "tested_scope": ["backend", "frontend", "integration"],
+  "passed": [
+    "POST /api/stylist/login valid creds returns 200 with token+stylist (no pin field)",
+    "POST /api/stylist/login wrong PIN returns 401",
+    "GET /api/stylists hides pin field",
+    "PUT /api/stylist/stylist-michael/blocks (busy 13:00-14:00) returns 200 with block.id; /api/availability marks 12:45..13:45 unavailable",
+    "DELETE /api/stylist/.../blocks/{id} (with follow-redirect) re-opens slots; availability fully restored (47/47)",
+    "PUT blocks with status='leave' accepted; status='something' -> 400; end_time<=start_time -> 400",
+    "POST /api/bookings tomorrow 10:00 Michael svc-beard-sculpt -> schedule returns booking with hydrated 'service' and status='upcoming'",
+    "PATCH /api/stylist/.../bookings/{id}/status {status:'done'} updates to done; status:'invalid' -> 400",
+    "GET /api/stylist/stylist-elena/availability?week_start returns working_hours(0..6)+blocks+bookings",
+    "Frontend /stylist shows 3 options; Michael+3456 -> /stylist/portal with 'Michael Voss' header, tabs Today + Weekly availability",
+    "Today tab shows booking-card-{id}; clicking btn-done-{id} updates status badge to 'Done'",
+    "Weekly grid renders; clicking available cell shows 'Marked Busy' toast and turns amber (busy); /api/availability for that date+time shows available=false",
+    "Clicking busy cell again clears it back to available (verified via subsequent test where cell no longer present)",
+    "btn-logout returns to /stylist login screen with 'Welcome, Michael' toast"
+  ],
+  "failed": [],
+  "action_items": [
+    "Minor: DELETE /api/stylist/{id}/blocks/{bid} responds with 307 redirect (likely trailing-slash). curl without -L doesn't follow. Functionality is fine but consider removing the redirect for stricter clients.",
+    "Cleanup performed: removed seeded today booking and 2 leftover test blocks from stylist_blocks."
+  ],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "retest_needed": false,
+  "full_testing_deferred": true
+}

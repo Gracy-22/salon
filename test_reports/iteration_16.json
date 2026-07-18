@@ -1,0 +1,44 @@
+{
+  "summary": "Phase 2 multi-location (Master list + per-salon toggles) verified end-to-end. Backend: 14/14 pytest pass in /app/backend/tests/test_multi_location_phase2.py — owner-only GET/PUT /api/owner/salons/{id}/menu (auth 401, unknown salon 404, defaults all is_offered=true with no docs, PUT bulk-upsert with is_offered=false + price_override, unknown service_id silently skipped, invalid salon 404), public /api/services with & without salon_id (excludes off, applies override, salon-main untouched), booking enforcement (off-service on QA salon => 400 'This service is not offered at that salon location', beard-sculpt override propagates to service.price=1234 and booking.salon_id=salon-qa-menu-salon, default-salon signature-cut still books at base 600). Phase 1 regression: 20/20 still pass. Frontend: OTP login → dashboard → Staff & Treatments tab renders [data-testid='owner-salon-menu'] with 9 rows, [data-testid='salon-menu-salon-select'], [data-testid='salon-menu-save-button'], 9 offered checkboxes and 9 price-override inputs. Save is disabled in clean state; toggling a checkbox enables Save AND disables the corresponding price input (visibly greyed). Typing 1500 into a price override enables Save; clicking Save shows toast 'Salon menu updated' (visible in screenshot) and after reload the value persists to '1500'; Save returns to disabled after successful save. Menu location selector shows all active salons; header salon switcher [data-testid='owner-salon-switcher'] syncs to menu selector (pre-selects same salon when header changes). 0 console errors during full flow.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "PUT /api/owner/salons/{id}/menu", "issue": "Unknown service_ids are silently skipped (spec-compliant per requirement). Consider returning ignored ids in response for better client feedback (non-blocking)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Salon menu section", "issues": ["'PRICE OVERRIDE' label appears above every input; visually noisy on 9 rows — consider a single column header instead of per-row label."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_multi_location_phase2.py",
+    "/app/test_reports/pytest/iter16_results.xml"
+  ],
+  "action_items": [
+    "(Optional) Simplify 'PRICE OVERRIDE' repeated micro-label in SalonMenuManager to a single column header for reduced visual noise.",
+    "(Optional) Return an ignored_service_ids list in PUT /api/owner/salons/{id}/menu response so the client can surface a soft warning when clients send stale service ids."
+  ],
+  "critical_code_review_comments": [
+    "_effective_salon_menu correctly implements 'no doc = offered at base price' semantics — only is_offered=false explicitly opts out.",
+    "PUT bulk-upsert uses upsert=true on {salon_id, service_id}, preventing duplicate override docs — good.",
+    "POST /api/bookings enforces salon menu via stylist.salon_id lookup and applies price_override before persistence — verified in tests: service.price=1234 flows into booking response and booking.salon_id inherited correctly.",
+    "GET /api/services with salon_id excludes off-services entirely (not just marks them) — correct behavior for public booking flow.",
+    "Frontend SalonMenuManager.jsx uses controlled draft state with proper dirty diff (compares against menu snapshot) — Save disabled in clean state and re-disabled after successful save cycle (verified).",
+    "Price input is correctly disabled + visibly styled (disabled:bg-stone-50 disabled:opacity-60) when its checkbox is unchecked.",
+    "StaffTreatmentsManager mounts SalonMenuManager as a 3rd card and syncs menuSalonId with the outer salonFilter via useEffect on defaultSalonId — verified header switcher pre-selects same salon in menu selector.",
+    "Salon menu section falls back to first active salon when header is 'All salons' — sensible UX since 'all' is meaningless for menu editing."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_multi_location_phase2.py"
+  ],
+  "success_rate": {"backend": "100% (14/14 Phase 2 + 20/20 Phase 1 regression)", "frontend": "100% on all requested scenarios"},
+  "test_credentials": "Owner phone 8511111593; use POST /api/owner/login/request-otp (UI path) — mock_otp in response body.",
+  "seed_data_creation": "Backend test created salon 'salon-qa-menu-salon' + stylist TEST_QA_MenuStylist + 2 bookings (one on QA salon with override price 1234, one on salon-main at base 600). TestZCleanup archives both stylist and QA salon at end. Frontend test set a temporary price_override=1500 on the 2nd service row of salon-main, then cleared it during cleanup step.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Phase 2 verified. For future frontend OTP flows: use captured response OTP (page.on('response')) rather than pre-calling /api/owner/login/request-otp separately — calling it twice invalidates the earlier OTP. The Owner login UI uses data-testid='owner-phone-input', 'owner-request-otp', 'owner-otp-input', 'owner-verify-otp'. Only 1 active salon (salon-main) exists in the DB right now — Phase 1 archived 'Bandra Branch' & 'Maison Aurelle — Bandra' remain archived but not returned by /api/salons. To multi-salon test the menu selector, create a fresh salon via POST /api/owner/salons first, then archive it. The menu selector falls back to first active salon when header is set to __all__.",
+  "rca of the issue": "No bugs found. All Phase 2 acceptance criteria met. One micro UX suggestion (repeat PRICE OVERRIDE label) and one optional API ergonomics improvement (return ignored_service_ids from PUT). Neither is blocking."
+}
